@@ -1,0 +1,142 @@
+#clicks per seccond game
+import time
+#Pygame import and initalisaiton
+import pygame
+pygame.init()
+#clock settup
+clock=pygame.time.Clock()
+tickrate=60
+#Screen initialisation
+SCREEN_W=750
+SCREEN_H=600
+screen = pygame.display.set_mode((SCREEN_W,SCREEN_H))
+
+#Button class
+class Button():
+    def __init__(self,name="button_x",X_POS=SCREEN_W/2,Y_POS=SCREEN_H/2,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,50,125),HOVER_COLOUR=(100,0,80),TEXT="BUTTON"):
+        self.X_CENTRE=(X_POS)-(X_LEN//2)
+        self.Y_CENTRE=(Y_POS)-(Y_LEN//2)
+        self.X_LEN=X_LEN
+        self.Y_LEN=Y_LEN
+        self.rect=pygame.Rect(self.X_CENTRE,self.Y_CENTRE,X_LEN,Y_LEN)
+        self.COLOUR=COLOUR
+        self.HOVER_COLOUR=HOVER_COLOUR
+        self.TEXT=TEXT
+        self.name=name
+        self.clicked=True
+  
+    def hovering(self):
+        return self.rect.collidepoint(pygame.mouse.get_pos())
+
+    def holding(self):
+        return self.hovering()==True and pygame.mouse.get_pressed()[0] == 1
+            
+    def click(self,event):
+        if self.hovering()==True and event.type == pygame.MOUSEBUTTONDOWN and not self.clicked:
+            self.clicked=True
+            return True
+        else:
+            self.clicked=False
+            return False
+            
+    def draw(self):
+        if (self.hovering())==True:
+            pygame.draw.rect(screen,(self.HOVER_COLOUR),self.rect)
+        else:
+            pygame.draw.rect(screen,(self.COLOUR),self.rect)
+        font = pygame.font.SysFont("Arial", (self.Y_LEN))
+        Buttontxt = font.render(self.TEXT, True, (0, 0, 0))
+        text_rect = Buttontxt.get_rect(center=self.rect.center)
+        screen.blit(Buttontxt, text_rect)
+    def work(self,event):
+        self.hovering()
+        self.click(event)
+
+# Window class
+class window():
+    def __init__(self,name="default_window",bg_colour=(255,255,255),buttons=[],texts=[]):
+        self.name=name
+        self.bg_colour=bg_colour
+        self.buttons=buttons
+        self.texts=texts
+
+    def draw_bg(self):
+        screen.fill(self.bg_colour)
+
+    def draw_buttons(self):
+        for button_and_function in self.buttons:
+            button_and_function[0].draw()
+        
+    def buttons_work(self,event):
+        for button_and_function in self.buttons:
+            if button_and_function[0].click(event):
+                button_and_function[1]()
+
+    def display_text(self):       
+        for text in self.texts:
+            font = pygame.font.SysFont("Arial", (text[2]))
+            txt = font.render(text[0], True, (0, 0, 0))
+            screen.blit(txt, (text[1]))
+
+    def run(self,event):
+        self.draw_bg()
+        self.display_text()
+        self.draw_buttons()
+        self.buttons_work(event)
+
+def window_handler(windows,event):
+    global current_window
+    for window in windows:
+        if window.name==current_window:          
+            window.run(event)
+
+def window_switch(new_window):
+    global current_window
+    current_window=new_window
+        
+def quit():
+    global run
+    run=False
+
+main_menu=window("Main_menu",(255,255,255),[
+    (Button("Settings",X_POS=SCREEN_W/2,Y_POS=2*SCREEN_H/4,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,200,125),HOVER_COLOUR=(180,180,80),TEXT="Settings"),
+                 lambda: window_switch("settings")),
+    (Button("Quit",X_POS=SCREEN_W/2,Y_POS=3*SCREEN_H/4,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,200,125),HOVER_COLOUR=(180,180,80),TEXT="Quit"),
+                 lambda: quit()),
+    (Button("Play",X_POS=SCREEN_W/2,Y_POS=1*SCREEN_H/4,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,200,125),HOVER_COLOUR=(180,180,80),TEXT="Play"),
+                 lambda: window_switch("play"))])
+
+settings=window("settings",(255,255,255),[
+    (Button("Menu",X_POS=SCREEN_W/2,Y_POS=3*SCREEN_H/4,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,200,125),HOVER_COLOUR=(180,180,80),TEXT="Menu"),
+                 lambda: window_switch("Main_menu"))])
+
+play=window("play",(255,255,255),[
+    (Button("Pause",X_POS=100,Y_POS=50,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,200,125),HOVER_COLOUR=(180,180,80),TEXT="Pause"),
+                 lambda: window_switch("Pause_menu"))])
+
+pause_menu=window("Pause_menu",(100,100,109),[
+    (Button("Menu",X_POS=SCREEN_W/2,Y_POS=1*SCREEN_H/4,X_LEN=200,Y_LEN=50,
+                 COLOUR=(200,200,125),HOVER_COLOUR=(180,180,80),TEXT="Menu"),
+                 lambda: window_switch("Main_menu"))],
+                 [("Paused",(SCREEN_W/2-140,25),100)])
+
+windows=[main_menu,settings,play,pause_menu]
+current_window="Main_menu"
+
+run=True
+while run:
+    clock.tick(tickrate)
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+        window_handler(windows,event)
+        #display update              
+    pygame.display.flip()
+
+pygame.quit()
